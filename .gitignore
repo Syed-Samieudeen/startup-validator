@@ -1,0 +1,13 @@
+# WHAT THIS FILE DOES:
+# Tells Git which files to NEVER upload to GitHub.
+# Most importantly: .env contains your API key — never share it.
+
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+venv/
+.venv/
+*.egg-info/
+dist/

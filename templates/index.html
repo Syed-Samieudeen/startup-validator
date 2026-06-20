@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Startup Validator</title>
+  <style>
+    /* ── Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0f14;
+      --surface:  #161a23;
+      --border:   #252b38;
+      --accent:   #7c6bff;
+      --accent2:  #00e5a0;
+      --text:     #e8eaf0;
+      --muted:    #7a8099;
+      --danger:   #ff5f7a;
+      --warn:     #ffb547;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 2rem 2rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .logo { font-size: 1.5rem; }
+    .brand { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand span { color: var(--accent); }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 720px;
+      margin: 3.5rem auto 0;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 0.75rem;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); font-size: 1.05rem; margin-bottom: 2rem; }
+
+    /* ── Input bar ── */
+    .input-wrap {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.5rem;
+      transition: border-color 0.2s;
+    }
+    .input-wrap:focus-within { border-color: var(--accent); }
+    .input-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.6rem 0.75rem;
+    }
+    .input-wrap input::placeholder { color: var(--muted); }
+    .btn-validate {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn-validate:hover { opacity: 0.88; }
+    .btn-validate:active { transform: scale(0.97); }
+    .btn-validate:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Loader ── */
+    #loader {
+      display: none;
+      text-align: center;
+      padding: 3rem 1.5rem;
+    }
+    .steps-progress { list-style: none; display: inline-flex; flex-direction: column; gap: 0.6rem; text-align: left; }
+    .steps-progress li {
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: color 0.3s;
+    }
+    .steps-progress li.active { color: var(--accent2); }
+    .steps-progress li.done { color: var(--muted); text-decoration: line-through; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Report ── */
+    #report { display: none; max-width: 900px; margin: 3rem auto 4rem; padding: 0 1.5rem; }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .report-header h2 { font-size: 1.4rem; font-weight: 700; }
+    .idea-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 1rem;
+      font-size: 0.85rem;
+      color: var(--accent2);
+    }
+
+    /* ── Section cards ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    /* ── Competitor cards ── */
+    .competitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.85rem; }
+    .competitor-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .competitor-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .competitor-card p { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; line-height: 1.5; }
+    .tag {
+      display: inline-block;
+      background: #1e2436;
+      border-radius: 6px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.72rem;
+      color: var(--accent2);
+      margin-right: 0.3rem;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Market size blocks ── */
+    .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
+    @media (max-width: 560px) { .market-grid { grid-template-columns: 1fr; } }
+    .market-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .market-block .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    .market-block .value { font-size: 1.6rem; font-weight: 800; color: var(--accent2); }
+    .market-block .desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.4; }
+
+    /* ── Reviews / pain points ── */
+    .pill-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .pill {
+      background: #1e2436;
+      border-radius: 999px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+    .pill.red { background: #2a1520; color: var(--danger); }
+    .pill.green { background: #0d2a20; color: var(--accent2); }
+
+    .opp-score {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--warn);
+      margin: 0.5rem 0 0.25rem;
+    }
+
+    /* ── Pricing tiers ── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.85rem; }
+    .pricing-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem;
+    }
+    .pricing-card.highlighted { border-color: var(--accent); }
+    .pricing-card h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.4rem; }
+    .pricing-card .price { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.6rem; }
+    .pricing-card ul { list-style: none; }
+    .pricing-card ul li { font-size: 0.78rem; color: var(--muted); padding: 0.2rem 0; border-bottom: 1px solid var(--border); }
+    .pricing-card ul li:last-child { border-bottom: none; }
+    .pricing-card ul li::before { content: "✓ "; color: var(--accent2); }
+
+    /* ── Roadmap phases ── */
+    .phase-list { display: flex; flex-direction: column; gap: 0.85rem; }
+    .phase-card {
+      background: var(--bg);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      padding: 1rem 1.1rem;
+    }
+    .phase-card:nth-child(2) { border-color: var(--accent2); }
+    .phase-card:nth-child(3) { border-color: var(--warn); }
+    .phase-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .phase-card .duration { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.6rem; }
+    .phase-card .features { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    /* ── First action banner ── */
+    .action-banner {
+      background: linear-gradient(135deg, #1a1040, #0d2a20);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 1.2rem 1.5rem;
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .action-banner .icon { font-size: 1.8rem; }
+    .action-banner h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 0.2rem; }
+    .action-banner p { font-size: 0.95rem; font-weight: 600; }
+
+    /* ── Error (generic) ── */
+    #error-msg {
+      display: none;
+      background: #2a1520;
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      color: var(--danger);
+      padding: 1rem 1.5rem;
+      max-width: 600px;
+      margin: 2rem auto;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    /* ── Rate limit banner ── */
+    #rate-limit-banner {
+      display: none;
+      background: #1a1400;
+      border: 1px solid var(--warn);
+      border-radius: 14px;
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1.4rem 1.75rem;
+      text-align: center;
+    }
+    #rate-limit-banner .rl-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    #rate-limit-banner h3 { color: var(--warn); font-size: 1rem; margin-bottom: 0.4rem; }
+    #rate-limit-banner p { color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+    #rate-limit-banner .reset-note {
+      display: inline-block;
+      margin-top: 0.75rem;
+      background: #2a2000;
+      border-radius: 999px;
+      padding: 0.3rem 1rem;
+      font-size: 0.78rem;
+      color: var(--warn);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🚀</span>
+  <span class="brand">Startup<span>Validator</span></span>
+</header>
+
+<div class="hero">
+  <h1>Validate your idea<br>before you build <em>anything</em></h1>
+  <p>Powered by Google Gemini — free, instant, no fluff</p>
+
+  <div class="input-wrap">
+    <input type="text" id="idea-input"
+      placeholder="e.g. I want to build an AI fitness app"
+      maxlength="200" />
+    <button class="btn-validate" id="btn-go" onclick="runValidation()">
+      Validate →
+    </button>
+  </div>
+</div>
+
+<!-- Rate limit banner -->
+<div id="rate-limit-banner">
+  <div class="rl-icon">⏳</div>
+  <h3>Daily limit reached</h3>
+  <p>This app runs on Google Gemini's free AI tier which has a daily request limit.<br>
+     The limit resets every 24 hours at midnight UTC.</p>
+  <span class="reset-note">🔄 Try again tomorrow — it's free again then</span>
+</div>
+
+<!-- Loading state -->
+<div id="loader">
+  <div class="spinner"></div>
+  <ul class="steps-progress" id="steps">
+    <li id="s1">🔍 Finding competitors...</li>
+    <li id="s2">📊 Estimating market size...</li>
+    <li id="s3">💬 Analyzing user reviews...</li>
+    <li id="s4">💰 Designing pricing strategy...</li>
+    <li id="s5">🗺️ Building MVP roadmap...</li>
+  </ul>
+</div>
+
+<!-- Error message -->
+<div id="error-msg"></div>
+
+<!-- Report output -->
+<div id="report">
+  <div class="report-header">
+    <h2>Validation Report</h2>
+    <span class="idea-badge" id="idea-label"></span>
+  </div>
+
+  <!-- 1. Competitors -->
+  <div class="section">
+    <div class="section-title">🏢 Competitors</div>
+    <div class="competitor-grid" id="competitors-out"></div>
+  </div>
+
+  <!-- 2. Market Size -->
+  <div class="section">
+    <div class="section-title">📊 Market Size</div>
+    <div class="market-grid" id="market-out"></div>
+    <div style="margin-top:1rem; font-size:0.82rem; color:var(--muted);">
+      Growth rate: <strong id="growth-rate" style="color:var(--accent2)"></strong>
+    </div>
+  </div>
+
+  <!-- 3. Reviews / Sentiment -->
+  <div class="section">
+    <div class="section-title">💬 Review Analysis</div>
+    <p id="sentiment-summary" style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem; line-height:1.6;"></p>
+    <div style="margin-bottom:0.75rem;">
+      <div style="font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem;">Top complaints</div>
+      <div class="pill-list" id="complaints-out"></div>
+    </div>
+    <div style="margin-bottom:0.75rem;">
+      <div style="font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem;">What users love</div>
+      <div class="pill-list" id="praises-out"></div>
+    </div>
+    <div>
+      <div style="font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem;">Market gaps (your opportunity)</div>
+      <div class="pill-list" id="gaps-out"></div>
+    </div>
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.78rem; color:var(--muted);">Opportunity score</div>
+      <div class="opp-score" id="opp-score"></div>
+      <div style="font-size:0.8rem; color:var(--muted);" id="opp-reason"></div>
+    </div>
+  </div>
+
+  <!-- 4. Pricing -->
+  <div class="section">
+    <div class="section-title">💰 Pricing Strategy</div>
+    <p id="pricing-strategy" style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;"></p>
+    <div class="pricing-grid" id="pricing-out"></div>
+  </div>
+
+  <!-- 5. Roadmap -->
+  <div class="section">
+    <div class="section-title">🗺️ MVP Roadmap</div>
+    <p id="mvp-summary" style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;"></p>
+    <div class="phase-list" id="phases-out"></div>
+  </div>
+
+  <!-- First action -->
+  <div class="action-banner">
+    <span class="icon">⚡</span>
+    <div>
+      <h4>Do this first</h4>
+      <p id="first-action"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  WHAT THIS SCRIPT DOES:
+  ----------------------
+  1. On button click → sends POST to Flask /validate with the idea
+  2. Animates the loading steps while waiting
+  3. When Flask returns the JSON report → renders all 5 sections into HTML
+*/
+
+async function runValidation() {
+  const idea = document.getElementById("idea-input").value.trim();
+  if (!idea) return;
+
+  // Hide old results, show loader
+  document.getElementById("report").style.display = "none";
+  document.getElementById("error-msg").style.display = "none";
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("btn-go").disabled = true;
+
+  // Animate through the step indicators
+  const steps = ["s1","s2","s3","s4","s5"];
+  let stepIdx = 0;
+  const stepTimer = setInterval(() => {
+    if (stepIdx > 0) document.getElementById(steps[stepIdx-1]).classList.add("done");
+    if (stepIdx < steps.length) {
+      document.getElementById(steps[stepIdx]).classList.add("active");
+      stepIdx++;
+    }
+  }, 4000); // advance every 4 seconds
+
+  try {
+    // POST to Flask backend
+    const res = await fetch("/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea })
+    });
+
+    clearInterval(stepTimer);
+    const data = await res.json();
+
+    if (data.error_type === "rate_limit") {
+      showRateLimit();
+      return;
+    }
+    if (!res.ok || data.error) {
+      showError(data.error || "Something went wrong.");
+      return;
+    }
+
+    renderReport(data);
+
+  } catch (err) {
+    clearInterval(stepTimer);
+    showError("Could not connect to the server. Is Flask running?");
+  } finally {
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("btn-go").disabled = false;
+    // Reset step animations
+    steps.forEach(s => {
+      document.getElementById(s).classList.remove("active","done");
+    });
+  }
+}
+
+function renderReport(data) {
+  document.getElementById("idea-label").textContent = data.startup_idea;
+
+  // ── 1. Competitors ──
+  const compDiv = document.getElementById("competitors-out");
+  compDiv.innerHTML = (data.competitors || []).map(c => `
+    <div class="competitor-card">
+      <h4>${c.name}</h4>
+      <p>${c.description}</p>
+      <span class="tag">👥 ${c.estimated_users}</span>
+      <span class="tag">💳 ${c.pricing}</span>
+      <p style="margin-top:0.5rem; font-size:0.75rem;">
+        <span style="color:#7c6bff;">✦ ${c.strengths}</span><br>
+        <span style="color:#ff5f7a;">⚠ ${c.weakness}</span>
+      </p>
+    </div>`).join("");
+
+  // ── 2. Market Size ──
+  const mkt = data.market_size || {};
+  document.getElementById("market-out").innerHTML = `
+    <div class="market-block">
+      <div class="label">TAM</div>
+      <div class="value">${mkt.tam?.value || "—"}</div>
+      <div class="desc">${mkt.tam?.description || ""}</div>
+    </div>
+    <div class="market-block">
+      <div class="label">SAM</div>
+      <div class="value">${mkt.sam?.value || "—"}</div>
+      <div class="desc">${mkt.sam?.description || ""}</div>
+    </div>
+    <div class="market-block">
+      <div class="label">SOM</div>
+      <div class="value">${mkt.som?.value || "—"}</div>
+      <div class="desc">${mkt.som?.description || ""}</div>
+    </div>`;
+  document.getElementById("growth-rate").textContent = mkt.growth_rate || "";
+
+  // ── 3. Reviews ──
+  const rev = data.reviews || {};
+  document.getElementById("sentiment-summary").textContent = rev.sentiment_summary || "";
+  document.getElementById("complaints-out").innerHTML =
+    (rev.top_complaints || []).map(c => `<span class="pill red">${c.issue}</span>`).join("");
+  document.getElementById("praises-out").innerHTML =
+    (rev.top_praises || []).map(p => `<span class="pill green">${p.feature}</span>`).join("");
+  document.getElementById("gaps-out").innerHTML =
+    (rev.unmet_needs || []).map(n => `<span class="pill">${n}</span>`).join("");
+  document.getElementById("opp-score").textContent = rev.opportunity_score || "";
+  document.getElementById("opp-reason").textContent = rev.opportunity_reason || "";
+
+  // ── 4. Pricing ──
+  const pricing = data.pricing || {};
+  document.getElementById("pricing-strategy").textContent = pricing.pricing_strategy || "";
+  document.getElementById("pricing-out").innerHTML =
+    (pricing.tiers || []).map((t, i) => `
+      <div class="pricing-card ${i===1 ? 'highlighted' : ''}">
+        <h4>${t.name}</h4>
+        <div class="price">${t.price}</div>
+        <ul>${(t.features || []).map(f => `<li>${f}</li>`).join("")}</ul>
+        <p style="font-size:0.72rem;color:var(--muted);margin-top:0.6rem;">${t.target}</p>
+      </div>`).join("");
+
+  // ── 5. Roadmap ──
+  const rm = data.roadmap || {};
+  document.getElementById("mvp-summary").textContent = rm.mvp_summary || "";
+  document.getElementById("phases-out").innerHTML =
+    (rm.phases || []).map(p => `
+      <div class="phase-card">
+        <h4>${p.phase}</h4>
+        <div class="duration">⏱ ${p.duration} &nbsp;·&nbsp; 🎯 ${p.milestone}</div>
+        <div class="features">
+          ${(p.features || []).map(f => `<span class="pill">${f}</span>`).join("")}
+        </div>
+      </div>`).join("");
+
+  document.getElementById("first-action").textContent = rm.first_action || "";
+
+  document.getElementById("report").style.display = "block";
+  document.getElementById("report").scrollIntoView({ behavior: "smooth" });
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-msg");
+  el.textContent = "⚠ " + msg;
+  el.style.display = "block";
+  document.getElementById("rate-limit-banner").style.display = "none";
+}
+
+function showRateLimit() {
+  // Hide generic error, show the dedicated rate-limit banner
+  document.getElementById("error-msg").style.display = "none";
+  const banner = document.getElementById("rate-limit-banner");
+  banner.style.display = "block";
+  banner.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// Allow pressing Enter to submit
+document.getElementById("idea-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") runValidation();
+});
+</script>
+</body>
+</html>

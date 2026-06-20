@@ -1,0 +1,17 @@
+# WHAT THIS FILE DOES:
+# --------------------
+# Tells Render.com how to deploy your Flask app for FREE.
+# When you push to GitHub, Render reads this file and:
+# 1. Installs Python packages from requirements.txt
+# 2. Starts the Flask server using gunicorn (production WSGI server)
+# 3. Assigns you a free public URL like: https://startup-validator.onrender.com
+
+services:
+  - type: web
+    name: startup-validator
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false   # You set this manually in Render dashboard (never hardcode keys)
