@@ -27,10 +27,14 @@ load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# Gemini Flash — Google's free, fast model
+# Gemini 2.0 Flash — chosen specifically because it has a MUCH higher free
+# tier quota (~1,500 requests/day) compared to newer models like
+# gemini-3.5-flash / gemini-flash-latest, which are capped at only 20/day
+# on the free tier as of mid-2026. Using the newest model isn't always best
+# for a free app — older stable Flash models get far more free quota.
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-flash-latest:generateContent"
+    "gemini-2.0-flash:generateContent"
 )
 
 
@@ -82,7 +86,7 @@ def ask_groq(prompt: str, temperature: float = 0.7) -> str:
         ],
         "generationConfig": {
             "temperature": temperature,
-            "maxOutputTokens": 4000,
+            "maxOutputTokens": 2000,
         },
     }
 
