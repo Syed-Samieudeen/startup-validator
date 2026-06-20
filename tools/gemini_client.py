@@ -27,14 +27,15 @@ load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# Gemini 2.0 Flash — chosen specifically because it has a MUCH higher free
-# tier quota (~1,500 requests/day) compared to newer models like
-# gemini-3.5-flash / gemini-flash-latest, which are capped at only 20/day
-# on the free tier as of mid-2026. Using the newest model isn't always best
-# for a free app — older stable Flash models get far more free quota.
+# Gemini 2.5 Flash-Lite — Google's current (as of mid-2026), actively
+# supported model with the highest free tier quota. We previously tried
+# gemini-2.0-flash, but that model was OFFICIALLY RETIRED on June 1, 2026
+# and silently redirects to gemini-3.5-flash (which only gets 20 free
+# requests/day) — that redirect was the real cause of our earlier 429s.
+# 2.5 Flash-Lite is Google's actively maintained low-cost/high-quota model.
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.0-flash:generateContent"
+    "gemini-2.5-flash-lite:generateContent"
 )
 
 
@@ -106,6 +107,13 @@ def ask_groq(prompt: str, temperature: float = 0.7) -> str:
 
     response.raise_for_status()
     data = response.json()
+
+    # Log which model ACTUALLY served this request. If Google silently
+    # redirects our requested model to a different one (as happened with
+    # the retired gemini-2.0-flash), this line makes that visible in the
+    # logs immediately instead of us discovering it via mystery 429s.
+    actual_model = data.get("modelVersion", "unknown")
+    print(f"✅ Gemini responded using model: {actual_model}")
 
     # Extract just the text content from Gemini's response structure
     text = data["candidates"][0]["content"]["parts"][0]["text"]
